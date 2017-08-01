@@ -6,6 +6,7 @@ import numpy as np
 
 from data_access.load_morphodb import morphodb_load
 from ml.encoder import encode_morphodb, encode_word
+from ml.decoder import decode_word
 from ml.word2morpho import Word2Morpho
 from config import encoder as encconf
 
@@ -25,4 +26,5 @@ class TestWord2Morpho(unittest.TestCase):
 
         test_seqs = np.array([encode_word(word) for word in TEST_WORDS])
 
-        print w2m.predict(test_seqs)
+        print [decode_word(enc_word) for enc_word in w2m.predict(test_seqs)]
+
