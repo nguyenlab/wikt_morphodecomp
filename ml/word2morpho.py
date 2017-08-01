@@ -15,23 +15,23 @@ class Word2Morpho(object):
                                       hidden_dim=w2mconf.HIDDEN_DIM,
                                       output_length=encconf.ENC_SIZE_WORD + 10,
                                       output_dim=encconf.ENC_SIZE_CHAR,
-                                      depth=2)
+                                      depth=1, unroll=True)
         self.model.compile(loss='mse', optimizer='rmsprop')
 
     def train(self, input_seqs, output_seqs, num_epochs, batch_size=1, validation_split=0.):
         self.model.fit(input_seqs, output_seqs, batch_size, num_epochs, verbose=1, validation_split=validation_split)
 
     def predict(self, insts):
-        return self._model.predict(insts)
+        return self.model.predict(insts)
 
     def load(self, path):
         try:
-            self._model = load_model(path)
+            self.model = load_model(path)
             print "Loaded model."
             return True
         except(IOError):
             return False
 
     def save(self, path):
-        self._model.save(path)
+        self.model.save(path)
 
