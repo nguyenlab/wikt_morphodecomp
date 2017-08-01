@@ -21,6 +21,9 @@ class Word2Morpho(object):
     def train(self, input_seqs, output_seqs, num_epochs, batch_size=1, validation_split=0.):
         self.model.fit(input_seqs, output_seqs, batch_size, num_epochs, verbose=1, validation_split=validation_split)
 
+    def train_from_generator(self, generator, steps_per_epoch, num_epochs):
+        self.model.fit_generator(generator, steps_per_epoch, epochs=num_epochs)
+    
     def predict(self, insts):
         return self.model.predict(insts)
 
