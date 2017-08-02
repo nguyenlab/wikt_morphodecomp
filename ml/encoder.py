@@ -27,28 +27,26 @@ def encode_word(w, word_size=conf.ENC_SIZE_WORD, char_size=conf.ENC_SIZE_CHAR):
     return enc
 
 
+def encode_sample_weights(w, word_size=conf.ENC_SIZE_WORD, char_size=conf.ENC_SIZE_CHAR):
+    enc = np.zeros(word_size, dtype=np.float16)
+    delim_word = u"{" + w + u"}"
+
+    for i in xrange(len(delim_word)):
+        enc[i] = 1.
+
+    return enc
+
+
+
 def encode_morphodb(morphodb, word_size_input=conf.ENC_SIZE_WORD, char_size_input=conf.ENC_SIZE_CHAR, 
                     word_size_output=conf.ENC_SIZE_WORD, char_size_output=conf.ENC_SIZE_CHAR):
     input_seqs = []
     output_seqs = []
+    sample_weights = []
 
-    for (word, morphemes) in morphodb:
-        total_decomp = False
-        decomp = None
-
-        while (not total_decomp):
-            total_decomp = True
-            decomp = []
-            for morpheme in morphemes:
-                if morpheme in morphodb:
-                    decomp.extend(morphodb[morpheme]["morphemes"]["seq"])
-                    total_decomp = False
-                else:
-                    decomp.append(morpheme)
-
-            morphemes = list(decomp)
-
+    for (word, morphemes) in morphodb: 
         input_seqs.append(encode_word(word, word_size_input, char_size_input))
-        output_seqs.append(encode_word(decomp, word_size_output, char_size_output))
+        output_seqs.append(encode_word(morphemes, word_size_output, char_size_output))
+        sample_weights.append(encode_sample_weights(morphemes, word_size_output, char_size_output))
 
-    return (np.array(input_seqs, dtype=np.float16), np.array(output_seqs, dtype=np.float16))
+    return (np.array(input_seqs, dtype=np.float16), np.array(output_seqs, dtype=np.float16), np.array(sample_weights, dtype=np.float16))
