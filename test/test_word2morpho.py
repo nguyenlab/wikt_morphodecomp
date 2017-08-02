@@ -13,7 +13,7 @@ from ml.word2morpho import Word2Morpho
 from config import encoder as encconf
 
 TEST_WORDS = ["unlockability", "busheater"]
-MORPHODB_PATH = "/home/danilo/tdv_family/wikt_morphodecomp/data/enmorphodb.json"
+MORPHODB_PATH = "../data/enmorphodb.json"
 
 config = tf.ConfigProto(intra_op_parallelism_threads=16, 
                          inter_op_parallelism_threads=16, 

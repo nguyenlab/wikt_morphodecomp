@@ -32,7 +32,22 @@ def encode_morphodb(morphodb, word_size_input=conf.ENC_SIZE_WORD, char_size_inpu
     input_seqs = []
     output_seqs = []
 
-    for (word, decomp) in morphodb:
+    for (word, morphemes) in morphodb:
+        total_decomp = False
+        decomp = None
+
+        while (not total_decomp):
+            total_decomp = True
+            decomp = []
+            for morpheme in morphemes:
+                if morpheme in morphodb:
+                    decomp.extend(morphodb[morpheme]["morphemes"]["seq"])
+                    total_decomp = False
+                else:
+                    decomp.append(morpheme)
+
+            morphemes = list(decomp)
+
         input_seqs.append(encode_word(word, word_size_input, char_size_input))
         output_seqs.append(encode_word(decomp, word_size_output, char_size_output))
 
