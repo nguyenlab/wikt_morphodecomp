@@ -32,7 +32,7 @@ VOCAB_PATH = "../data/wikt_vocab.json"
 
 class TestWord2Morpho(unittest.TestCase):
     def test_accuracy(self):
-        #return
+        return
         morphodb = morphodb_load(MORPHODB_PATH)
         #pnoundb = morphodb_load(PNOUNDB_PATH)
 
@@ -50,7 +50,7 @@ class TestWord2Morpho(unittest.TestCase):
         w2m.save("/home/danilo/tdv_family/w2m_model_%d-%d-%d_rms.hdf5" % (w2mconf.HIDDEN_DIM_ENC_1, w2mconf.HIDDEN_DIM_DEC_1, w2mconf.HIDDEN_DIM_DEC_2))
         
         test_vocab = TEST_WORDS
-        test_seqs = np.array([encode_word(word, case=False, reverse=False) for word in test_vocab], dtype=np.uint8)
+        test_seqs = np.array([encode_word(word, reverse=False) for word in test_vocab], dtype=np.uint8)
 
         results = []
         for (word, enc_word) in izip(test_vocab, w2m.predict(test_seqs)):
@@ -68,15 +68,15 @@ class TestWord2Morpho(unittest.TestCase):
     def test_decomp(self):
         return
         w2m = Word2Morpho()
-        w2m.load("/home/danilo/tdv_family/w2m_model_%d-%d-%d_rev.hdf5" % (w2mconf.HIDDEN_DIM_ENC_1, w2mconf.HIDDEN_DIM_DEC_1, w2mconf.HIDDEN_DIM_DEC_2))
+        w2m.load("/home/danilo/tdv_family/w2m_model_%d-%d-%d_rms.hdf5" % (w2mconf.HIDDEN_DIM_ENC_1, w2mconf.HIDDEN_DIM_DEC_1, w2mconf.HIDDEN_DIM_DEC_2))
 
         test_vocab = []
         with open(VOCAB_PATH) as vocab_file:
             vocab = json.load(vocab_file)
-            test_vocab = [term for term in vocab if (" " not in term and re.match(r"^[a-zA-Z]+", term) and len(term) < 40)]
+            test_vocab = [term for term in vocab if (" " not in term and re.match(r"^[a-zA-Z]+", term) and len(term) < 40 and len(term) > 3 and not term.isupper())]
 
-        test_vocab = random.sample(test_vocab, 1000)
-        test_seqs = np.array([encode_word(word, case=False, reverse=True) for word in test_vocab], dtype=np.uint8)
+        #test_vocab = random.sample(test_vocab, 10000)
+        test_seqs = np.array([encode_word(word, reverse=False) for word in test_vocab], dtype=np.uint8)
 
         results = []
         for (word, enc_word) in izip(test_vocab, w2m.predict(test_seqs)):
@@ -86,8 +86,11 @@ class TestWord2Morpho(unittest.TestCase):
                 decomp = unpadded_output.group("decomp")
                 char_confidence = confidence(enc_word)[1:len(decomp) + 1]
                 avg_confidence = float(np.mean(char_confidence))
-                results.append({"word": word, "decomp": decomp, "char_confidence": char_confidence, "confidence": avg_confidence})
 
+                if (avg_confidence < 0.5):
+                    results.append({"word": word, "decomp": decomp}) #, "char_confidence": char_confidence, "confidence": avg_confidence})
+
+        print "Lower 50%%: %d/%d" % (len(results), len(test_vocab))
         print json.dumps(results, indent=2)
         
         return

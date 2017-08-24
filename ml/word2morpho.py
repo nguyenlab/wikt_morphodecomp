@@ -1,31 +1,30 @@
 __author__ = "Danilo S. Carvalho <danilo@jaist.ac.jp>"
 
 from keras.models import Sequential, Model, load_model
-from keras.layers import Masking, TimeDistributed, Activation, LSTM, RepeatVector, Dense, Bidirectional, Dropout, Concatenate, Input, Lambda
+from keras.layers import Masking, TimeDistributed, Activation, LSTM, RepeatVector, Dense, Bidirectional, Dropout
 from keras import backend as K
 
 from ml import encoder as enc
-from config import encoder as encconf
-from config import word2morpho as w2mconf
-
-
-def concat_lstm(x):
-    input_shape = K.shape(x)
-    return K.reshape(x, (input_shape[0], input_shape[1] * input_shape[2]))
 
 
 class Word2Morpho(object):
-    def __init__(self):
+    def __init__(self, config):
+        init_dist = config["model"]["INIT_DIST"]
+        enc_size_word = config["model"]["ENC_SIZE_WORD"]
+        enc_size_ctx_win = config["model"]["ENC_SIZE_CTX_WIN"]
+        hidden_dim_enc = (config["model"]["HIDDEN_DIM_ENC_1"],)
+        enc_size_word_out = config["model"]["ENC_SIZE_WORD_OUT"]
+        hidden_dim_dec = (config["model"]["HIDDEN_DIM_DEC_1"], config["model"]["HIDDEN_DIM_DEC_2"])
+
         self.model = Sequential()
-        self.model.add(Masking(mask_value=0., input_shape=(encconf.ENC_SIZE_WORD, (enc.ENC_SIZE_CHAR) * encconf.ENC_SIZE_CTX_WIN)))
-        self.model.add(Bidirectional(LSTM(w2mconf.HIDDEN_DIM_ENC_1, return_sequences=False, implementation=2, activation="tanh")))
+        self.model.add(Masking(mask_value=0., input_shape=(enc_size_word, enc.ENC_SIZE_CHAR * enc_size_ctx_win)))
+        self.model.add(Bidirectional(LSTM(hidden_dim_enc[0], return_sequences=False, implementation=2, activation="tanh", kernel_initializer=init_dist)))
         self.model.add(Dropout(0.25))
-        #self.model.add(Bidirectional(LSTM(w2mconf.HIDDEN_DIM_ENC_2, return_sequences=False, implementation=2, activation="tanh")))
-        self.model.add(RepeatVector(encconf.ENC_SIZE_WORD_OUT))
-        self.model.add(Bidirectional(LSTM(w2mconf.HIDDEN_DIM_DEC_1, return_sequences=True, implementation=2, activation="tanh")))
+        self.model.add(RepeatVector(enc_size_word_out))
+        self.model.add(Bidirectional(LSTM(hidden_dim_dec[0], return_sequences=True, implementation=2, activation="tanh", kernel_initializer=init_dist)))
         self.model.add(Dropout(0.25))
-        self.model.add(TimeDistributed(Dense(w2mconf.HIDDEN_DIM_DEC_2, activation="tanh"), input_shape=(encconf.ENC_SIZE_WORD_OUT, w2mconf.HIDDEN_DIM_DEC_1)))
-        self.model.add(TimeDistributed(Dense(enc.ENC_SIZE_CHAR, activation="softmax"), input_shape=(encconf.ENC_SIZE_WORD_OUT, w2mconf.HIDDEN_DIM_DEC_2)))
+        self.model.add(TimeDistributed(Dense(hidden_dim_dec[1], activation="tanh", kernel_initializer=init_dist), input_shape=(enc_size_word_out, hidden_dim_dec[0])))
+        self.model.add(TimeDistributed(Dense(enc.ENC_SIZE_CHAR, activation="softmax", kernel_initializer=init_dist), input_shape=(enc_size_word_out, hidden_dim_dec[1])))
 
         self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop', sample_weight_mode="temporal")
         self.model.summary()
