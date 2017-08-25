@@ -4,6 +4,7 @@ import json
 
 DECOMP_PASS_LIMIT = 4
 
+
 def morphodb_load(path, excluded_words=set()):
     morphodb = None
     with open(path) as morphodbfile:

@@ -19,23 +19,24 @@ from config.loader import load_config
 model_cache = None
 
 
-def decompose(word_list, config_path, cache=True):
+def decompose(word_list, config_path, model=None, cache=True):
     global model_cache
     config = load_config(config_path)
     word_size = config["model"]["ENC_SIZE_WORD"]
     ctx_win_size = config["model"]["ENC_SIZE_CTX_WIN"]
 
-    if (cache and model_cache is not None):
-        model = model_cache
-    else:
-        model = Word2Morpho()
-        model.load(config["data"]["model_path"] % config["id"])
-        model_cache = model
+    if (model is None):
+        if (cache and model_cache is not None):
+            model = model_cache
+        else:
+            model = Word2Morpho()
+            model.load(config["data"]["model_path"] % config["id"])
+            model_cache = model
 
     enc_words = np.array([encode_word(word, word_size, ENC_SIZE_CHAR, ctx_win_size, reverse=False) for word in word_list], dtype=np.uint8)
 
     results = []
-    for (word, enc_decomp) in izip(word_list, model.predict(test_seqs)):
+    for (word, enc_decomp) in izip(word_list, model.predict(enc_words)):
         unpadded_output = re.search(r"^{(?P<decomp>[^}]+)}.*", decode_word(enc_decomp))
 
         if (unpadded_output):
@@ -44,17 +45,17 @@ def decompose(word_list, config_path, cache=True):
             avg_confidence = float(np.mean(char_confidence))
 
             if (avg_confidence > config["hyperparam"]["confidence_thresh"]):
-                results.append({"decomp": decomp.split(), "confidence": avg_confidence})
+                results.append({"word": word, "decomp": decomp.split(), "confidence": avg_confidence})
             else:
-                results.append({"decomp": word, "confidence": avg_confidence})
+                results.append({"word": word, "decomp": [word], "confidence": avg_confidence})
         else:
-            results.append({"decomp": word, "confidence": 0.})
+            results.append({"word": word, "decomp": [word], "confidence": 0.})
 
     return results
 
 
-def train_model(config):
-    morphodb = morphodb_load(config["data"]["morphodb_path"])
+def train_model(config, excluded_words=set()):
+    morphodb = morphodb_load(config["data"]["morphodb_path"], excluded_words=excluded_words)
 
     input_seqs, output_seqs, sample_weights = encode_morphodb(morphodb, config["model"]["ENC_SIZE_WORD"], ENC_SIZE_CHAR, 
                                                               config["model"]["ENC_SIZE_WORD_OUT"], ENC_SIZE_CHAR, 
