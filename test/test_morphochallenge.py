@@ -11,9 +11,10 @@ from collections import Counter
 
 from morphodecomp import train_model, decompose
 from config.loader import load_config
+from ml.word2morpho import Word2Morpho
 
-MORPHOCHALLENGE_DATA_PATH = ""
-CONFIG_PATH_LIST = ["./data/config/default.config.json"]
+MORPHOCHALLENGE_DATA_PATH = "/home/danilo/tdv_family/wikt_morphodecomp/data/morphochallenge-2010/"
+CONFIG_PATH_LIST = ["./data/config/0005.config.json"]
 
 
 def load_morphochallenge_data(path):
@@ -30,12 +31,14 @@ def load_morphochallenge_data(path):
             morpheme_seqs = []
             for decomp in decomps.split(","):
                 morphemes = []
-
-                for part in decomp:
+                
+                for part in decomp.split():
                     stem, morph_cls = part.split(":")
 
                     if ("_" in morph_cls):
-                        morph, cls = morph_cls.split("_")
+                        morphcls_sep = morph_cls.split("_")
+                        morph = "_".join(morphcls_sep[0:len(morphcls_sep) - 1])
+                        cls = morphcls_sep[-1]
                         if (cls == "V" or cls == "N"):
                             morphemes.append(morph)
                         elif (cls == "p"):
@@ -46,7 +49,7 @@ def load_morphochallenge_data(path):
                         if (morph_cls != "~"):
                             morphemes.append("-" + stem)
 
-                morpheme_seqs.append(morphemes)
+                morpheme_seqs.append([m.lower() for m in morphemes])
 
             if (word in test_word_set):
                 test_morphodb[word] = morpheme_seqs
@@ -65,26 +68,37 @@ def calc_performance(test_morphodb, morpho_analyses):
     for morpho_anlz in morpho_analyses:
         for morpheme in morpho_anlz["decomp"]:
             try:
-                pair = (morpho_anlz, random.choice([anlz for anlz in morpho_analyses if (morpheme in anlz["decomp"])]), morpheme)
+                pair = (morpho_anlz, 
+                        random.choice([anlz for anlz in morpho_analyses if (morpheme in anlz["decomp"] and anlz["word"] != morpho_anlz["word"])]),
+                        morpheme)
                 pairs_result.append(pair)
             except (IndexError):
                 pass
 
     for word in test_morphodb:
-        for morpheme in test_morphodb[word]:
-            try:
-                pair = (word, random.choice([word for word in test_morphodb if (morpheme in test_morphodb[word])]), morpheme)
-                pairs_golden.append(pair)
-            except (IndexError):
-                pass
+        for decomp in test_morphodb[word]:
+            for morpheme in [morph for morph in decomp if ("~" not in morph)]:
+                try:
+                    pair = (word, 
+                            random.choice([w for w in test_morphodb if (morpheme in test_morphodb[w][0])]), 
+                            morpheme)
+                    pairs_golden.append(pair)
+                except (IndexError):
+                    pass
 
     hits = Counter()
     misses = Counter()
     for pair in pairs_result:
         word1 = pair[0]["word"]
-        word2 = pair[2]["word"]
+        word2 = pair[1]["word"]
+        morphemes1 = []
+        morphemes2 = []
+        for decomp in test_morphodb[word1]:
+            morphemes1.extend(decomp)
+        for decomp in test_morphodb[word2]:
+            morphemes2.extend(decomp)
 
-        if (pair[2] in test_morphodb[word1] and pair[2] in test_morphodb[word2]):
+        if (pair[2] in morphemes1 and pair[2] in morphemes2):
             hits[word1] += 1
         else:
             misses[word1] += 1
@@ -97,8 +111,11 @@ def calc_performance(test_morphodb, morpho_analyses):
     hits = Counter()
     misses = Counter()
     for pair in pairs_golden:
-        word1 = pair[0]["word"]
-        word2 = pair[2]["word"]
+        word1 = pair[0]
+        word2 = pair[1]
+
+        print pair
+        print (pair[2], analyses_dict[word1]["decomp"], analyses_dict[word2]["decomp"])
 
         if (pair[2] in analyses_dict[word1]["decomp"] and pair[2] in analyses_dict[word2]["decomp"]):
             hits[word1] += 1
@@ -122,11 +139,13 @@ class TestMorphoChallenge(unittest.TestCase):
 
         for config_path in CONFIG_PATH_LIST:
             config = load_config(config_path)
-            model = train_model(config, set(test_morphodb.keys()))
+            model = Word2Morpho(config)
+            model.load(config["data"]["model_path"] % config["id"])
+            #model = train_model(config, set(test_morphodb.keys()))
             word_list = []
 
             for word in test_morphodb:
-                mo = re.search(r"^(?P<core>.+)(?P<gen>'s?)$")
+                mo = re.search(r"^(?P<core>.+)(?P<gen>'s?)$", word)
                 if (mo):
                     word_list.append([mo.group("core"), "-" + mo.group("gen")])
                 else:
@@ -136,7 +155,8 @@ class TestMorphoChallenge(unittest.TestCase):
 
             for i in xrange(len(word_list)):
                 if (len(word_list[i]) > 1):
-                    morpho_analyses[i]["decomp"].extend(word_list[i][1:])
+                    morpho_analyses[i]["word"] = word_list[i][0] + word_list[i][1][1:]
+                    morpho_analyses[i]["decomp"].append(word_list[i][1])
 
             exp_decomps[config_path] = morpho_analyses
 

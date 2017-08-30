@@ -6,7 +6,6 @@ import json
 import re
 import random
 import numpy as np
-import tensorflow as tf
 from itertools import izip
 from keras import backend as K
 
@@ -29,7 +28,7 @@ def decompose(word_list, config_path, model=None, cache=True):
         if (cache and model_cache is not None):
             model = model_cache
         else:
-            model = Word2Morpho()
+            model = Word2Morpho(config)
             model.load(config["data"]["model_path"] % config["id"])
             model_cache = model
 
