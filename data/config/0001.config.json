@@ -17,7 +17,7 @@
         "vocab_path": "./data/wikt_vocab.json",
         "pluraldb_path": "",
         "test_vocab": ["unlockability", "busheater", "drivethru", "cryomancy"],
-        "model_path": "../w2m_models/w2m_model_[%s].hdf5"
+        "model_path": "../w2m_models/w2m_model_[%s]-%d.hdf5"
     },
 
     "hyperparam": {

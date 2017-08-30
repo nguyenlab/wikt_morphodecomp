@@ -9,7 +9,7 @@ import re
 import random
 from collections import Counter
 
-from morphodecomp import train_model, decompose
+from morphodecomp import train_model, decompose, decompose_ensemble, EnsembleMode
 from config.loader import load_config
 from ml.word2morpho import Word2Morpho
 
@@ -135,33 +135,34 @@ def calc_performance(test_morphodb, morpho_analyses):
 class TestMorphoChallenge(unittest.TestCase):
     def test_accuracy(self):
         train_morphodb, test_morphodb = load_morphochallenge_data(MORPHOCHALLENGE_DATA_PATH)
-        exp_decomps = dict()
+        models = []
 
+        model_num = 0
         for config_path in CONFIG_PATH_LIST:
             config = load_config(config_path)
-            model = Word2Morpho(config)
-            model.load(config["data"]["model_path"] % config["id"])
-            #model = train_model(config, set(test_morphodb.keys()))
-            word_list = []
+            # model = Word2Morpho(config)
+            # model.load(config["data"]["model_path"] % config["id"])
+            model = train_model(config, set(test_morphodb.keys()), model_seq=model_num)
+            models.append(model)
+            model_num += 1
 
-            for word in test_morphodb:
-                mo = re.search(r"^(?P<core>.+)(?P<gen>'s?)$", word)
-                if (mo):
-                    word_list.append([mo.group("core"), "-" + mo.group("gen")])
-                else:
-                    word_list.append([word])
+        word_list = []
+        for word in test_morphodb:
+            mo = re.search(r"^(?P<core>.+)(?P<gen>'s?)$", word)
+            if (mo):
+                word_list.append([mo.group("core"), "-" + mo.group("gen")])
+            else:
+                word_list.append([word])
 
-            morpho_analyses = decompose([w[0] for w in word_list], config_path, model=model, cache=False)
+        # morpho_analyses = decompose([w[0] for w in word_list], config_path, model=model, cache=False)
+        morpho_analyses = decompose_ensemble([w[0] for w in word_list], CONFIG_PATH_LIST, models=models, EnsembleMode.CONFIDENCE_OVERALL)
 
-            for i in xrange(len(word_list)):
-                if (len(word_list[i]) > 1):
-                    morpho_analyses[i]["word"] = word_list[i][0] + word_list[i][1][1:]
-                    morpho_analyses[i]["decomp"].append(word_list[i][1])
+        for i in xrange(len(word_list)):
+            if (len(word_list[i]) > 1):
+                morpho_analyses[i]["word"] = word_list[i][0] + word_list[i][1][1:]
+                morpho_analyses[i]["decomp"].append(word_list[i][1])
 
-            exp_decomps[config_path] = morpho_analyses
-
-        for config_path in exp_decomps:
-            print calc_performance(test_morphodb, exp_decomps[config_path])
+        print calc_performance(test_morphodb, morpho_analyses)
 
 
 
