@@ -14,7 +14,10 @@ from config.loader import load_config
 from ml.word2morpho import Word2Morpho
 
 MORPHOCHALLENGE_DATA_PATH = "/home/danilo/tdv_family/wikt_morphodecomp/data/morphochallenge-2010/"
-CONFIG_PATH_LIST = ["./data/config/0005.config.json"]
+#CONFIG_PATH_LIST = ["./data/config/0006.config.json"] * 10
+CONFIG_PATH_LIST = ["./data/config/0007.config.json"] * 10
+#CONFIG_PATH_LIST = ["./data/config/0008.config.json"] * 3
+#CONFIG_PATH_LIST = ["./data/config/0006.config.json"] * 5 + ["./data/config/0007.config.json"] * 5 + ["./data/config/0008.config.json"] * 3
 
 
 def load_morphochallenge_data(path):
@@ -114,8 +117,8 @@ def calc_performance(test_morphodb, morpho_analyses):
         word1 = pair[0]
         word2 = pair[1]
 
-        print pair
-        print (pair[2], analyses_dict[word1]["decomp"], analyses_dict[word2]["decomp"])
+        #print pair
+        #print (pair[2], analyses_dict[word1]["decomp"], analyses_dict[word2]["decomp"])
 
         if (pair[2] in analyses_dict[word1]["decomp"] and pair[2] in analyses_dict[word2]["decomp"]):
             hits[word1] += 1
@@ -138,13 +141,20 @@ class TestMorphoChallenge(unittest.TestCase):
         models = []
 
         model_num = 0
+        last_config_path = ""
         for config_path in CONFIG_PATH_LIST:
+            if (config_path == last_config_path):
+                model_num += 1
+            else:
+                model_num = 0
+
             config = load_config(config_path)
-            # model = Word2Morpho(config)
-            # model.load(config["data"]["model_path"] % config["id"])
-            model = train_model(config, set(test_morphodb.keys()), model_seq=model_num)
+            model = Word2Morpho(config)
+            model.load(config["data"]["model_path"] % (config["id"], model_num))
+            #model = train_model(config, set(test_morphodb.keys()), model_seq=model_num)
             models.append(model)
-            model_num += 1
+
+            last_config_path = config_path
 
         word_list = []
         for word in test_morphodb:
@@ -155,7 +165,12 @@ class TestMorphoChallenge(unittest.TestCase):
                 word_list.append([word])
 
         # morpho_analyses = decompose([w[0] for w in word_list], config_path, model=model, cache=False)
-        morpho_analyses = decompose_ensemble([w[0] for w in word_list], CONFIG_PATH_LIST, models=models, EnsembleMode.CONFIDENCE_OVERALL)
+        morpho_analyses = decompose_ensemble([w[0] for w in word_list], CONFIG_PATH_LIST, models=models, mode=EnsembleMode.MAJORITY_OVERALL, num_procs=2)
+
+        for anlz in morpho_analyses:
+            print anlz
+
+        #return
 
         for i in xrange(len(word_list)):
             if (len(word_list[i]) > 1):

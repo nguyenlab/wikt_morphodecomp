@@ -7,7 +7,6 @@ import re
 import numpy as np
 from itertools import izip
 from collections import Counter
-from enum import Enum
 from joblib import Parallel, delayed
 
 from data_access.load_morphodb import morphodb_load
@@ -19,7 +18,7 @@ from config.loader import load_config
 model_cache = None
 
 
-class EnsembleMode(Enum):
+class EnsembleMode:
     MAJORITY_OVERALL = 1
     MAJORITY_CHAR = 2
     CONFIDENCE_OVERALL = 3
@@ -37,10 +36,10 @@ def decompose(word_list, config_path, model=None, cache=True):
             model = model_cache
         else:
             model = Word2Morpho(config)
-            model.load(config["data"]["model_path"] % config["id"])
+            model.load(config["data"]["model_path"] % (config["id"], 0))
             model_cache = model
 
-    enc_words = np.array([encode_word(word, word_size, ENC_SIZE_CHAR, ctx_win_size, reverse=False)
+    enc_words = np.array([encode_word(word, word_size, ENC_SIZE_CHAR, ctx_win_size, reverse=config["model"]["REVERSE"])
                           for word in word_list], dtype=np.uint8)
 
     results = []
@@ -75,34 +74,47 @@ def decompose_ensemble(word_list, config_paths, models=[], mode=EnsembleMode.MAJ
     assert len(config_paths) == len(models)
     results = []
 
-    ensembled_results = Parallel(n_jobs=num_procs)(delayed(decompose)(word_list, config_path, model=model, cache=False)
-                               for (config_path, model) in izip(config_paths, models))
+    #ensembled_results = Parallel(n_jobs=num_procs)(delayed(decompose)(word_list, config_path, model=model, cache=False)
+    #                           for (config_path, model) in izip(config_paths, models))
+
+    ensembled_results = []
+    for (config_path, model) in izip(config_paths, models):
+        ensembled_results.append(decompose(word_list, config_path, model=model, cache=False))
+        
 
     for word_results in izip(*ensembled_results):
         if (mode == EnsembleMode.MAJORITY_OVERALL):
             votes = Counter([tuple(wres["decomp"]) for wres in word_results])
-            selected = votes.most_common(1)[0]
+            selected = votes.most_common(1)[0][0]
             majority_confidence = [wres["confidence"] for wres in word_results if (tuple(wres["decomp"]) == selected)]
+
             results.append({"word": word_results[0]["word"],
                             "decomp": list(selected),
-                            "confidence": float(sum(majority_confidence)) / len(majority_confidence)})
+                            "confidence": float(sum(majority_confidence)) / len(majority_confidence),
+                            "votes": votes})
 
         elif (mode == EnsembleMode.CONFIDENCE_OVERALL):
-            return max(word_results, key=lambda wr: wr["confidence"])
+            results.append(max(word_results, key=lambda wr: wr["confidence"]))
 
         elif (mode == EnsembleMode.MAJORITY_CHAR):
-            maxlen_wres = max(word_results, key=lambda wr: len(wr["char_confidence"]))
+            maxlen_wres = max(word_results, key=lambda wr: len(" ".join(wr["decomp"])))
             plain_decomp = " ".join(maxlen_wres["decomp"])
-            result = {"word": word_results[0]["word"], "decomp": [], "confidence": 0., "char_confidence": []}
+            result = {"word": word_results[0]["word"], "decomp": [], "confidence": 0., "char_confidence": [], "votes": []}
 
             for i in range(len(plain_decomp)):
                 votes = Counter([" ".join(wres["decomp"])[i] if (i < len(" ".join(wres["decomp"]))) else " "
                                  for wres in word_results])
-                selected = votes.most_common(1)[0]
-                majority_confidence = [wres["char_confidence"][i] if (i < len(" ".join(wres["decomp"]))) else 0
-                                       for wres in word_results if (" ".join(wres["decomp"])[i] == selected)]
+                selected = votes.most_common(1)[0][0]
+                majority_confidence = [wres["char_confidence"][i] if (i < len(" ".join(wres["decomp"])) and " ".join(wres["decomp"])[i] == selected) else 0.
+                                       for wres in word_results]
                 result["decomp"].append(selected)
-                result["char_confidence"].append(float(sum(majority_confidence)) / len(majority_confidence))
+                
+                if (sum(majority_confidence) > 0.0001):
+                    result["char_confidence"].append(float(sum(majority_confidence)) / len([c for c in majority_confidence if (c > 0.)]))
+                else:
+                    result["char_confidence"].append(0.)
+
+                result["votes"].append(votes.most_common(1)[0])
 
             result["decomp"] = "".join(result["decomp"]).strip().split()
             result["confidence"] = sum(result["char_confidence"]) / len(result["char_confidence"])
@@ -110,16 +122,16 @@ def decompose_ensemble(word_list, config_paths, models=[], mode=EnsembleMode.MAJ
             results.append(result)
 
         elif (mode == EnsembleMode.CONFIDENCE_CHAR):
-            maxlen_wres = max(word_results, key=lambda wr: len(wr["char_confidence"]))
+            maxlen_wres = max(word_results, key=lambda wr: len(" ".join(wr["decomp"])))
             plain_decomp = " ".join(maxlen_wres["decomp"])
             result = {"word": word_results[0]["word"], "decomp": [], "confidence": 0., "char_confidence": []}
 
             for i in range(len(plain_decomp)):
-                max_confidence_wres = max([wres for wres in word_results if (i < len(wres["char_confidence"]))],
+                max_confidence_wres = max([wres for wres in word_results if (i < len(" ".join(wres["decomp"])))],
                                         key=lambda wr: wr["char_confidence"][i])
-                selected = " ".join(max_confidence_wres["decomp"])[i]
+                selected = " ".join(max_confidence_wres["decomp"])[i] if (i < len(" ".join(max_confidence_wres["decomp"]))) else " "
                 result["decomp"].append(selected)
-                result["char_confidence"].append(max_confidence_wres["char_confidence"][i])
+                result["char_confidence"].append(max_confidence_wres["char_confidence"][i] if (i < len(" ".join(max_confidence_wres["decomp"]))) else 1.)
 
             result["decomp"] = "".join(result["decomp"]).strip().split()
             result["confidence"] = sum(result["char_confidence"]) / len(result["char_confidence"])
@@ -138,7 +150,7 @@ def train_model(config, excluded_words=set(), model_seq=0):
 
     w2m = Word2Morpho(config)
 
-    w2m.train(input_seqs, output_seqs, 25, batch_size=200, validation_split=0.005, sample_weight=sample_weights)
+    w2m.train(input_seqs, output_seqs, 25, batch_size=200, validation_split=0.001, sample_weight=sample_weights)
     w2m.save(config["data"]["model_path"] % (config["id"], model_seq))
 
     return w2m
@@ -199,11 +211,12 @@ def main(argv):
     model = None
 
     if ("train" in ops):
-        model = train_model(config)
+        for i in xrange(5):
+            model = train_model(config, model_seq=i+3)
 
     if (model is None):
         model = Word2Morpho(config)
-        model.load(config["data"]["model_path"] % config["id"])
+        model.load(config["data"]["model_path"] % (config["id"], 0))
 
     if ("test" in ops):
         test_accuracy(config, model)
