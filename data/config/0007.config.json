@@ -9,7 +9,7 @@
         "HIDDEN_DIM_ENC_2": 100,
         "HIDDEN_DIM_DEC_1": 300,
         "HIDDEN_DIM_DEC_2": 1000,
-        "INIT_DIST": "normal"
+        "INIT_DIST": "truncated_normal"
     },
 
     "data": {
@@ -20,6 +20,6 @@
     },
 
     "hyperparam": {
-        "confidence_thresh": 0.6
+        "confidence_thresh": 0.8
     }
 }

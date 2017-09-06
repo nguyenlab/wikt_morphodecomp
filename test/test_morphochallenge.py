@@ -14,9 +14,10 @@ from config.loader import load_config
 from ml.word2morpho import Word2Morpho
 
 MORPHOCHALLENGE_DATA_PATH = "/home/danilo/tdv_family/wikt_morphodecomp/data/morphochallenge-2010/"
-#CONFIG_PATH_LIST = ["./data/config/0006.config.json"] * 10
-CONFIG_PATH_LIST = ["./data/config/0007.config.json"] * 10
+CONFIG_PATH_LIST = ["./data/config/0006.config.json"] * 30
+#CONFIG_PATH_LIST = ["./data/config/0007.config.json"] * 30
 #CONFIG_PATH_LIST = ["./data/config/0008.config.json"] * 3
+#CONFIG_PATH_LIST = ["./data/config/0009.config.json"] * 3
 #CONFIG_PATH_LIST = ["./data/config/0006.config.json"] * 5 + ["./data/config/0007.config.json"] * 5 + ["./data/config/0008.config.json"] * 3
 
 
@@ -138,30 +139,32 @@ def calc_performance(test_morphodb, morpho_analyses):
 class TestMorphoChallenge(unittest.TestCase):
     def test_accuracy(self):
         train_morphodb, test_morphodb = load_morphochallenge_data(MORPHOCHALLENGE_DATA_PATH)
-        models = load_models(CONFIG_PATH_LIST)
 
-        word_list = []
-        for word in test_morphodb:
-            mo = re.search(r"^(?P<core>.+)(?P<gen>'s?)$", word)
-            if (mo):
-                word_list.append([mo.group("core"), "-" + mo.group("gen")])
-            else:
-                word_list.append([word])
+        for i in [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 20]:
+            models = load_models(CONFIG_PATH_LIST[0:i])
 
-        # morpho_analyses = decompose([w[0] for w in word_list], config_path, model=model, cache=False)
-        morpho_analyses = decompose_ensemble([w[0] for w in word_list], CONFIG_PATH_LIST, models=models, mode=EnsembleMode.MAJORITY_OVERALL, num_procs=2)
-
-        for anlz in morpho_analyses:
-            print anlz
-
-        #return
-
-        for i in xrange(len(word_list)):
-            if (len(word_list[i]) > 1):
-                morpho_analyses[i]["word"] = word_list[i][0] + word_list[i][1][1:]
-                morpho_analyses[i]["decomp"].append(word_list[i][1])
-
-        print calc_performance(test_morphodb, morpho_analyses)
+            word_list = []
+            for word in test_morphodb:
+                mo = re.search(r"^(?P<core>.+)(?P<gen>'s?)$", word)
+                if (mo):
+                    word_list.append([mo.group("core"), "-" + mo.group("gen")])
+                else:
+                    word_list.append([word])
+    
+            # morpho_analyses = decompose([w[0] for w in word_list], config_path, model=model, cache=False)
+            morpho_analyses = decompose_ensemble([w[0] for w in word_list], CONFIG_PATH_LIST, models=models, mode=EnsembleMode.MAJORITY_OVERALL, num_procs=2)
+    
+            # for anlz in morpho_analyses:
+            #     print anlz
+            # 
+            # return
+    
+            for i in xrange(len(word_list)):
+                if (len(word_list[i]) > 1):
+                    morpho_analyses[i]["word"] = word_list[i][0] + word_list[i][1][1:]
+                    morpho_analyses[i]["decomp"].append(word_list[i][1])
+    
+            print calc_performance(test_morphodb, morpho_analyses)
 
 
 
