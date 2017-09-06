@@ -156,6 +156,26 @@ def train_model(config, excluded_words=set(), model_seq=0):
     return w2m
 
 
+def load_models(config_paths=[]):
+    models = []
+    model_num = 0
+    last_config_path = ""
+    for config_path in config_paths:
+        if (config_path == last_config_path):
+            model_num += 1
+        else:
+            model_num = 0
+
+        config = load_config(config_path)
+        model = Word2Morpho(config)
+        model.load(config["data"]["model_path"] % (config["id"], model_num))
+        models.append(model)
+
+        last_config_path = config_path
+
+    return models
+
+
 def test_accuracy(config, model):
     word_size = config["model"]["ENC_SIZE_WORD"]
     ctx_win_size = config["model"]["ENC_SIZE_CTX_WIN"]

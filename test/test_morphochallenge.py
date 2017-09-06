@@ -9,7 +9,7 @@ import re
 import random
 from collections import Counter
 
-from morphodecomp import train_model, decompose, decompose_ensemble, EnsembleMode
+from morphodecomp import train_model, decompose, decompose_ensemble, load_models, EnsembleMode
 from config.loader import load_config
 from ml.word2morpho import Word2Morpho
 
@@ -138,23 +138,7 @@ def calc_performance(test_morphodb, morpho_analyses):
 class TestMorphoChallenge(unittest.TestCase):
     def test_accuracy(self):
         train_morphodb, test_morphodb = load_morphochallenge_data(MORPHOCHALLENGE_DATA_PATH)
-        models = []
-
-        model_num = 0
-        last_config_path = ""
-        for config_path in CONFIG_PATH_LIST:
-            if (config_path == last_config_path):
-                model_num += 1
-            else:
-                model_num = 0
-
-            config = load_config(config_path)
-            model = Word2Morpho(config)
-            model.load(config["data"]["model_path"] % (config["id"], model_num))
-            #model = train_model(config, set(test_morphodb.keys()), model_seq=model_num)
-            models.append(model)
-
-            last_config_path = config_path
+        models = load_models(CONFIG_PATH_LIST)
 
         word_list = []
         for word in test_morphodb:
