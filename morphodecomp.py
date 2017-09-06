@@ -105,7 +105,7 @@ def decompose_ensemble(word_list, config_paths, models=[], mode=EnsembleMode.MAJ
                 votes = Counter([" ".join(wres["decomp"])[i] if (i < len(" ".join(wres["decomp"]))) else " "
                                  for wres in word_results])
                 selected = votes.most_common(1)[0][0]
-                majority_confidence = [wres["char_confidence"][i] if (i < len(" ".join(wres["decomp"])) and " ".join(wres["decomp"])[i] == selected) else 0.
+                majority_confidence = [wres["char_confidence"][i] if (i < len(" ".join(wres["decomp"])) and i < len(wres["char_confidence"]) and " ".join(wres["decomp"])[i] == selected) else 0.
                                        for wres in word_results]
                 result["decomp"].append(selected)
                 
@@ -127,7 +127,7 @@ def decompose_ensemble(word_list, config_paths, models=[], mode=EnsembleMode.MAJ
             result = {"word": word_results[0]["word"], "decomp": [], "confidence": 0., "char_confidence": []}
 
             for i in range(len(plain_decomp)):
-                max_confidence_wres = max([wres for wres in word_results if (i < len(" ".join(wres["decomp"])))],
+                max_confidence_wres = max([wres for wres in word_results if (i < len(" ".join(wres["decomp"])) and i < len(wres["char_confidence"]))],
                                         key=lambda wr: wr["char_confidence"][i])
                 selected = " ".join(max_confidence_wres["decomp"])[i] if (i < len(" ".join(max_confidence_wres["decomp"]))) else " "
                 result["decomp"].append(selected)
@@ -141,7 +141,7 @@ def decompose_ensemble(word_list, config_paths, models=[], mode=EnsembleMode.MAJ
     return results
 
 
-def train_model(config, excluded_words=set(), model_seq=0):
+def train_model(config, excluded_words=set(), model_seq=0, num_epochs=25, batch_size=200):
     morphodb = morphodb_load(config["data"]["morphodb_path"], excluded_words=excluded_words)
 
     input_seqs, output_seqs, sample_weights = encode_morphodb(morphodb, config["model"]["ENC_SIZE_WORD"], ENC_SIZE_CHAR, 
@@ -150,7 +150,7 @@ def train_model(config, excluded_words=set(), model_seq=0):
 
     w2m = Word2Morpho(config)
 
-    w2m.train(input_seqs, output_seqs, 25, batch_size=200, validation_split=0.001, sample_weight=sample_weights)
+    w2m.train(input_seqs, output_seqs, num_epochs, batch_size=batch_size, validation_split=0.001, sample_weight=sample_weights)
     w2m.save(config["data"]["model_path"] % (config["id"], model_seq))
 
     return w2m

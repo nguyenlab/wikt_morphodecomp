@@ -27,7 +27,7 @@ class Word2Morpho(object):
         self.model.add(TimeDistributed(Dense(enc.ENC_SIZE_CHAR, activation="softmax", kernel_initializer=init_dist), input_shape=(enc_size_word_out, hidden_dim_dec[1])))
 
         self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop', sample_weight_mode="temporal")
-        self.model.summary()
+        #self.model.summary()
 
     def train(self, input_seqs, output_seqs, num_epochs, batch_size=1, validation_split=0., sample_weight=None):
         self.model.fit(input_seqs, output_seqs, batch_size, num_epochs, verbose=1, validation_split=validation_split, sample_weight=sample_weight)

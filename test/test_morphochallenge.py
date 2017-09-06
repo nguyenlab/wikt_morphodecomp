@@ -14,9 +14,10 @@ from config.loader import load_config
 from ml.word2morpho import Word2Morpho
 
 MORPHOCHALLENGE_DATA_PATH = "/home/danilo/tdv_family/wikt_morphodecomp/data/morphochallenge-2010/"
-#CONFIG_PATH_LIST = ["./data/config/0006.config.json"] * 10
-CONFIG_PATH_LIST = ["./data/config/0007.config.json"] * 10
+CONFIG_PATH_LIST = ["./data/config/0006.config.json"] * 30
+#CONFIG_PATH_LIST = ["./data/config/0007.config.json"] * 30
 #CONFIG_PATH_LIST = ["./data/config/0008.config.json"] * 3
+#CONFIG_PATH_LIST = ["./data/config/0009.config.json"] * 3
 #CONFIG_PATH_LIST = ["./data/config/0006.config.json"] * 5 + ["./data/config/0007.config.json"] * 5 + ["./data/config/0008.config.json"] * 3
 
 
@@ -138,46 +139,47 @@ def calc_performance(test_morphodb, morpho_analyses):
 class TestMorphoChallenge(unittest.TestCase):
     def test_accuracy(self):
         train_morphodb, test_morphodb = load_morphochallenge_data(MORPHOCHALLENGE_DATA_PATH)
-        models = []
 
-        model_num = 0
-        last_config_path = ""
-        for config_path in CONFIG_PATH_LIST:
-            if (config_path == last_config_path):
-                model_num += 1
-            else:
-                model_num = 0
+        for i in [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 20]:
+            models = []
+            model_num = 0
+            last_config_path = ""
+            for config_path in CONFIG_PATH_LIST[0:i]:
+                if (config_path == last_config_path):
+                    model_num += 1
+                else:
+                    model_num = 0
 
-            config = load_config(config_path)
-            model = Word2Morpho(config)
-            model.load(config["data"]["model_path"] % (config["id"], model_num))
-            #model = train_model(config, set(test_morphodb.keys()), model_seq=model_num)
-            models.append(model)
+                config = load_config(config_path)
+                model = Word2Morpho(config)
+                model.load(config["data"]["model_path"] % (config["id"], model_num))
+                #model = train_model(config, set(test_morphodb.keys()), model_seq=model_num)
+                models.append(model)
 
-            last_config_path = config_path
+                last_config_path = config_path
 
-        word_list = []
-        for word in test_morphodb:
-            mo = re.search(r"^(?P<core>.+)(?P<gen>'s?)$", word)
-            if (mo):
-                word_list.append([mo.group("core"), "-" + mo.group("gen")])
-            else:
-                word_list.append([word])
+            word_list = []
+            for word in test_morphodb:
+                mo = re.search(r"^(?P<core>.+)(?P<gen>'s?)$", word)
+                if (mo):
+                    word_list.append([mo.group("core"), "-" + mo.group("gen")])
+                else:
+                    word_list.append([word])
 
-        # morpho_analyses = decompose([w[0] for w in word_list], config_path, model=model, cache=False)
-        morpho_analyses = decompose_ensemble([w[0] for w in word_list], CONFIG_PATH_LIST, models=models, mode=EnsembleMode.MAJORITY_OVERALL, num_procs=2)
+            # morpho_analyses = decompose([w[0] for w in word_list], config_path, model=model, cache=False)
+            morpho_analyses = decompose_ensemble([w[0] for w in word_list], CONFIG_PATH_LIST[0:i], models=models, mode=EnsembleMode.MAJORITY_OVERALL, num_procs=2)
 
-        for anlz in morpho_analyses:
-            print anlz
+            #for anlz in morpho_analyses:
+            #    print anlz
 
-        #return
+            #return
 
-        for i in xrange(len(word_list)):
-            if (len(word_list[i]) > 1):
-                morpho_analyses[i]["word"] = word_list[i][0] + word_list[i][1][1:]
-                morpho_analyses[i]["decomp"].append(word_list[i][1])
+            for i in xrange(len(word_list)):
+                if (len(word_list[i]) > 1):
+                    morpho_analyses[i]["word"] = word_list[i][0] + word_list[i][1][1:]
+                    morpho_analyses[i]["decomp"].append(word_list[i][1])
 
-        print calc_performance(test_morphodb, morpho_analyses)
+            print calc_performance(test_morphodb, morpho_analyses)
 
 
 
