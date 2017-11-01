@@ -17,7 +17,9 @@ from ml.word2morpho import Word2Morpho
 from gensim.models.word2vec import Word2Vec
 from gensim.models import KeyedVectors
 
-CONFIG_PATH_LIST = ["./data/config/0006.config.json"] * 30
+CONFIG_PATH_LIST = ["./data/config/0010.config.json"] * 10
+#CONFIG_PATH_LIST = ["./data/config/0011.config.json"] * 10
+#CONFIG_PATH_LIST = ["./data/config/0006.config.json"] * 30
 #CONFIG_PATH_LIST = ["./data/config/0007.config.json"] * 30
 #CONFIG_PATH_LIST = ["./data/config/0008.config.json"] * 3
 #CONFIG_PATH_LIST = ["./data/config/0009.config.json"] * 3
