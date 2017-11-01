@@ -156,6 +156,7 @@ class TestMorphoChallengeW2V(unittest.TestCase):
 
         morpho_analyses = []
         for word in word_list:
+            print "DBG: ", word[0]
             try:
                 most_sim = sorted(decomp_list, key=lambda m: w2v.wv.similarity(m["word"], word[0]))[-1]
             except (KeyError):

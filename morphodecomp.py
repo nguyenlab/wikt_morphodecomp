@@ -234,8 +234,8 @@ def main(argv):
     train_morphodb, test_morphodb = load_morphochallenge_data()
 
     if ("train" in ops):
-        for i in xrange(5):
-            model = train_model(config, excluded_words=set(test_morphodb.keys()), model_seq=i+3)
+        for i in xrange(10):
+            model = train_model(config, excluded_words=set(test_morphodb.keys()), model_seq=i)
 
     if (model is None):
         model = Word2Morpho(config)
