@@ -3,7 +3,6 @@ __author__ = "Danilo S. Carvalho <danilo@jaist.ac.jp>"
 
 
 import unittest
-import os
 import json
 import re
 import random
@@ -11,12 +10,12 @@ from collections import Counter
 
 from morphodecomp import train_model, decompose, decompose_ensemble, load_models, EnsembleMode
 from data_access.load_morphodb import morphodb_load
+from data_access.load_morphochallenge import load_morphochallenge_data
 from config.loader import load_config
 from ml.word2morpho import Word2Morpho
 
 from gensim.models.word2vec import Word2Vec
 
-MORPHOCHALLENGE_DATA_PATH = "/home/danilo/tdv_family/wikt_morphodecomp/data/morphochallenge-2010/"
 CONFIG_PATH_LIST = ["./data/config/0006.config.json"] * 30
 #CONFIG_PATH_LIST = ["./data/config/0007.config.json"] * 30
 #CONFIG_PATH_LIST = ["./data/config/0008.config.json"] * 3
@@ -25,48 +24,6 @@ CONFIG_PATH_LIST = ["./data/config/0006.config.json"] * 30
 
 W2V_VEC_PATH = "/home/danilo/uv/GoogleNews-vectors-negative300.bin"
 W2V_MODEL_PATH = "/home/danilo/tdv_family/wikt_morphodecomp/data/w2v_decomp_map.pickle"
-
-
-def load_morphochallenge_data(path):
-    test_word_set = set()
-    test_morphodb = dict()
-    train_morphodb = dict()
-    with open(os.path.join(path, "goldstd_develset.labels.eng")) as test_file:
-        for line in test_file:
-            test_word_set.add(line.split("\t")[0])
-
-    with open(os.path.join(path, "goldstd_combined.segmentation.eng")) as combined_file:
-        for line in combined_file:
-            word, decomps = line.split("\t")
-            morpheme_seqs = []
-            for decomp in decomps.split(","):
-                morphemes = []
-                
-                for part in decomp.split():
-                    stem, morph_cls = part.split(":")
-
-                    if ("_" in morph_cls):
-                        morphcls_sep = morph_cls.split("_")
-                        morph = "_".join(morphcls_sep[0:len(morphcls_sep) - 1])
-                        cls = morphcls_sep[-1]
-                        if (cls == "V" or cls == "N"):
-                            morphemes.append(morph)
-                        elif (cls == "p"):
-                            morphemes.append(stem + "-")
-                        elif (cls == "s"):
-                            morphemes.append("-" + stem)
-                    else:
-                        if (morph_cls != "~"):
-                            morphemes.append("-" + stem)
-
-                morpheme_seqs.append([m.lower() for m in morphemes])
-
-            if (word in test_word_set):
-                test_morphodb[word] = morpheme_seqs
-            else:
-                train_morphodb[word] = morpheme_seqs
-
-    return (train_morphodb, test_morphodb)
 
 
 def calc_performance(test_morphodb, morpho_analyses):
@@ -144,7 +101,7 @@ def calc_performance(test_morphodb, morpho_analyses):
 
 class TestMorphoChallenge(unittest.TestCase):
     def test_accuracy(self):
-        train_morphodb, test_morphodb = load_morphochallenge_data(MORPHOCHALLENGE_DATA_PATH)
+        train_morphodb, test_morphodb = load_morphochallenge_data()
 
         for i in [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 20]:
             models = load_models(CONFIG_PATH_LIST[0:i])
@@ -175,7 +132,7 @@ class TestMorphoChallenge(unittest.TestCase):
 
 class TestMorphoChallengeW2V(unittest.TestCase):
     def test_accuracy(self):
-        train_morphodb, test_morphodb = load_morphochallenge_data(MORPHOCHALLENGE_DATA_PATH)
+        train_morphodb, test_morphodb = load_morphochallenge_data()
         config = load_config(CONFIG_PATH_LIST[0])
         morphodb = morphodb_load(config["data"]["morphodb_path"], excluded_words=set(test_morphodb.keys()))
 
