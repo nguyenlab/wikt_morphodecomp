@@ -10,8 +10,11 @@ import random
 from collections import Counter
 
 from morphodecomp import train_model, decompose, decompose_ensemble, load_models, EnsembleMode
+from data_access.load_morphodb import morphodb_load
 from config.loader import load_config
 from ml.word2morpho import Word2Morpho
+
+from gensim.models.word2vec import Word2Vec
 
 MORPHOCHALLENGE_DATA_PATH = "/home/danilo/tdv_family/wikt_morphodecomp/data/morphochallenge-2010/"
 CONFIG_PATH_LIST = ["./data/config/0006.config.json"] * 30
@@ -19,6 +22,9 @@ CONFIG_PATH_LIST = ["./data/config/0006.config.json"] * 30
 #CONFIG_PATH_LIST = ["./data/config/0008.config.json"] * 3
 #CONFIG_PATH_LIST = ["./data/config/0009.config.json"] * 3
 #CONFIG_PATH_LIST = ["./data/config/0006.config.json"] * 5 + ["./data/config/0007.config.json"] * 5 + ["./data/config/0008.config.json"] * 3
+
+W2V_VEC_PATH = "/home/danilo/uv/GoogleNews-vectors-negative300.bin"
+W2V_MODEL_PATH = "/home/danilo/tdv_family/wikt_morphodecomp/data/w2v_decomp_map.pickle"
 
 
 def load_morphochallenge_data(path):
@@ -165,6 +171,39 @@ class TestMorphoChallenge(unittest.TestCase):
                     morpho_analyses[i]["decomp"].append(word_list[i][1])
     
             print calc_performance(test_morphodb, morpho_analyses)
+
+
+class TestMorphoChallengeW2V(unittest.TestCase):
+    def test_accuracy(self):
+        train_morphodb, test_morphodb = load_morphochallenge_data(MORPHOCHALLENGE_DATA_PATH)
+        config = load_config(CONFIG_PATH_LIST[0])
+        morphodb = morphodb_load(config["data"]["morphodb_path"], excluded_words=set(test_morphodb.keys()))
+
+        word_list = []
+        for word in test_morphodb:
+            mo = re.search(r"^(?P<core>.+)(?P<gen>'s?)$", word)
+            if (mo):
+                word_list.append([mo.group("core"), "-" + mo.group("gen")])
+            else:
+                word_list.append([word])
+
+        decomp_list = []
+        for (word, morphemes) in morphodb:
+            decomp_list.append({"word": word, "decomp": morphemes.split(), "confidence": 1.0})
+
+        w2v = Word2Vec.load_word2vec_format(W2V_VEC_PATH, binary=True)
+
+        morpho_analyses = []
+        for word in word_list:
+            most_sim = sorted(decomp_list, key=lambda m: w2v.wv.similarity(m["word"], word))[-1]
+            morpho_analyses.append(most_sim)
+
+        for i in xrange(len(word_list)):
+            if (len(word_list[i]) > 1):
+                morpho_analyses[i]["word"] = word_list[i][0] + word_list[i][1][1:]
+                morpho_analyses[i]["decomp"].append(word_list[i][1])
+
+        print calc_performance(test_morphodb, morpho_analyses)
 
 
 

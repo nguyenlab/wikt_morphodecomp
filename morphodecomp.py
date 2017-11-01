@@ -14,6 +14,8 @@ from ml.encoder import encode_morphodb, encode_word, ENC_SIZE_CHAR
 from ml.decoder import decode_word, confidence
 from ml.word2morpho import Word2Morpho
 from config.loader import load_config
+from test.test_morphochallenge import load_morphochallenge_data, MORPHOCHALLENGE_DATA_PATH
+
 
 model_cache = None
 
@@ -229,10 +231,11 @@ def main(argv):
     config = load_config(argv[1])
     ops = argv[2].split(",")
     model = None
+    train_morphodb, test_morphodb = load_morphochallenge_data(MORPHOCHALLENGE_DATA_PATH)
 
     if ("train" in ops):
         for i in xrange(5):
-            model = train_model(config, model_seq=i+3)
+            model = train_model(config, excluded_words=set(test_morphodb.keys()), model_seq=i+3)
 
     if (model is None):
         model = Word2Morpho(config)
