@@ -7,28 +7,32 @@ import json
 import re
 import numpy as np
 
-from data_access.load_morphodb import morphodb_load
-from ml.encoder import encode_morphodb, encode_word
-from ml.decoder import decode_word
-from ml.word2morpho import Word2Morpho
-from config import encoder as encconf
+from morphodecomp import train_model, decompose, decompose_ensemble, load_models, EnsembleMode
+
+CONFIG_PATH_LIST = ["./data/config/0007.config.json"] * 20
+
+try:
+    assert len(models) > 0
+except:
+    models = load_models(CONFIG_PATH_LIST)
 
 urls = (
     '/w2morph/(.+)', 'W2Morph',
 )
 app = web.application(urls, globals())
 
-TEST_WORDS = ["unlockability", "busheater"]
-
-w2m = Word2Morpho()
-w2m.load("/home/danilo/tdv_family/w2m_model_4.hdf5")
-
-
 class W2Morph:
-    def GET(self, word):
-        test_word = np.array([encode_word(word)], dtype=np.float16)
+    def GET(self, words):
+        global CONFIG_PATH_LIST
+        global models
+        word_list = words.split(",")
+        morpho_analyses = decompose_ensemble(word_list, CONFIG_PATH_LIST, models=models, mode=EnsembleMode.MAJORITY_CHAR)
 
-        return json.dumps(re.search(r"^{(?P<decomp>[^}]+)}.*", decode_word(w2m.predict(test_word)[0])).group("decomp").split())
+        for anlz in morpho_analyses:
+            del anlz["char_confidence"]
+            del anlz["votes"]
+
+        return json.dumps(morpho_analyses, indent=2)
 
 
 
