@@ -15,6 +15,7 @@ from config.loader import load_config
 from ml.word2morpho import Word2Morpho
 
 from gensim.models.word2vec import Word2Vec
+from gensim.models import KeyedVectors
 
 CONFIG_PATH_LIST = ["./data/config/0006.config.json"] * 30
 #CONFIG_PATH_LIST = ["./data/config/0007.config.json"] * 30
@@ -148,7 +149,7 @@ class TestMorphoChallengeW2V(unittest.TestCase):
         for (word, morphemes) in morphodb:
             decomp_list.append({"word": word, "decomp": morphemes.split(), "confidence": 1.0})
 
-        w2v = Word2Vec.load_word2vec_format(W2V_VEC_PATH, binary=True)
+        w2v = KeyedVectors.load_word2vec_format(W2V_VEC_PATH, binary=True)
 
         morpho_analyses = []
         for word in word_list:

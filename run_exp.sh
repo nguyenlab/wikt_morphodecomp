@@ -14,4 +14,5 @@ fi
 
 
 #PYTHONPATH=./:$PYTHONPATH python morphodecomp.py $1 $2
-PYTHONPATH=./:./test/:$PYTHONPATH python -m unittest test_morphochallenge.TestMorphoChallenge
+#PYTHONPATH=./:./test/:$PYTHONPATH python -m unittest test_morphochallenge.TestMorphoChallenge
+PYTHONPATH=./:./test/:$PYTHONPATH python -m unittest test_morphochallenge.TestMorphoChallengeW2V
