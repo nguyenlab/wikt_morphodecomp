@@ -7,6 +7,7 @@ import json
 import re
 import random
 from collections import Counter
+import Levenshtein
 
 from morphodecomp import train_model, decompose, decompose_ensemble, load_models, EnsembleMode
 from data_access.load_morphodb import morphodb_load
@@ -155,7 +156,11 @@ class TestMorphoChallengeW2V(unittest.TestCase):
 
         morpho_analyses = []
         for word in word_list:
-            most_sim = sorted(decomp_list, key=lambda m: w2v.wv.similarity(m["word"], word))[-1]
+            try:
+                most_sim = sorted(decomp_list, key=lambda m: w2v.wv.similarity(m["word"], word[0]))[-1]
+            except (KeyError):
+                most_sim = sorted(decomp_list, key=lambda m: Levenshtein.ratio(m["word"], word[0]))[-1]
+
             morpho_analyses.append(most_sim)
 
         for i in xrange(len(word_list)):
