@@ -1,5 +1,5 @@
 {
-    "id": "0011",
+    "id": "0012",
     "model": {
         "ENC_SIZE_WORD": 40,
         "ENC_SIZE_WORD_OUT": 68,
@@ -13,10 +13,10 @@
     },
 
     "data": {
-        "morphodb_path": "./data/enmorphodb_plurals.json",
-        "vocab_path": "./data/wikt_vocab.json",
+        "morphodb_path": "/Users/danilo/JAIST/research/tools/wikt_morphodecomp/wikt_morphodecomp/data/enmorphodb_plurals.json",
+        "vocab_path": "/Users/danilo/JAIST/research/tools/wikt_morphodecomp/wikt_morphodecomp/data/wikt_vocab.json",
         "test_vocab": ["unlockability", "busheater", "drivethru", "cryomancy", "pyroblasters"],
-        "model_path": "../w2m_models_new/w2m_model_[%s]-%d.hdf5"
+        "model_path": "/Users/danilo/JAIST/research/tools/wikt_morphodecomp/wikt_morphodecomp/data/w2m_models/w2m_model_[%s]-%d.hdf5"
     },
 
     "hyperparam": {

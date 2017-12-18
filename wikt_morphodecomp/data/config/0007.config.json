@@ -16,7 +16,7 @@
         "morphodb_path": "./data/enmorphodb_plurals.json",
         "vocab_path": "./data/wikt_vocab.json",
         "test_vocab": ["unlockability", "busheater", "drivethru", "cryomancy", "pyroblasters"],
-        "model_path": "../w2m_models/w2m_model_[%s]-%d.hdf5"
+        "model_path": "/Users/danilo/JAIST/research/tools/wikt_morphodecomp/wikt_morphodecomp/data/w2m_models/w2m_model_[%s]-%d.hdf5"
     },
 
     "hyperparam": {

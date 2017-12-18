@@ -25,6 +25,8 @@ def encode_word(w, word_size, char_size, ctx_win_size, reverse=False):
     assert (ctx_win_size % 2) == 1
     assert ctx_win_size >= 1
 
+    w = w[0:word_size - 2]
+
     if (not reverse):
         charseq = list("{"+ w + "}")
     else:

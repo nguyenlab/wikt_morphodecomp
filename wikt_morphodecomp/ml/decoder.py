@@ -2,7 +2,7 @@ __author__ = "Danilo S. Carvalho <danilo@jaist.ac.jp>"
 
 import numpy as np
 
-from ml import encoder as enc
+import encoder as enc
 
 CODE_CHARS = dict([(v,k) for (k,v) in enc.CHAR_CODES.items()])
 

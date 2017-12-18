@@ -7,9 +7,9 @@ import json
 import re
 import numpy as np
 
-from morphodecomp import train_model, decompose, decompose_ensemble, load_models, EnsembleMode
+from wikt_morphodecomp.morphodecomp import train_model, decompose, decompose_ensemble, load_models, EnsembleMode
 
-CONFIG_PATH_LIST = ["./data/config/0007.config.json"] * 20
+CONFIG_PATH_LIST = ["./data/config/0007.config.json"] * 3
 
 try:
     assert len(models) > 0

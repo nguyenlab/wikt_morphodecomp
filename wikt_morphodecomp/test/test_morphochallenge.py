@@ -9,11 +9,11 @@ import random
 from collections import Counter
 import Levenshtein
 
-from morphodecomp import train_model, decompose, decompose_ensemble, load_models, EnsembleMode
-from data_access.load_morphodb import morphodb_load
-from data_access.load_morphochallenge import load_morphochallenge_data
-from config.loader import load_config
-from ml.word2morpho import Word2Morpho
+from wikt_morphodecomp.morphodecomp import train_model, decompose, decompose_ensemble, load_models, EnsembleMode
+from wikt_morphodecomp.data_access.load_morphodb import morphodb_load
+from wikt_morphodecomp.data_access.load_morphochallenge import load_morphochallenge_data
+from wikt_morphodecomp.config.loader import load_config
+from wikt_morphodecomp.ml.word2morpho import Word2Morpho
 
 from gensim.models.word2vec import Word2Vec
 from gensim.models import KeyedVectors

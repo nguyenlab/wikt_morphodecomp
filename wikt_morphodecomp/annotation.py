@@ -21,11 +21,11 @@ def get_morpho_dict(word_list, config_paths, ensemble):
 
 class MorphoAnalysisAnnotator(Annotator):
     def annotate(self, annotable, ensemble=False, config_paths=(DEFAULT_CONFIG_PATH,)):
-        if (type(annotable) == type(Document)):
+        if (annotable.__class__.__name__ == "Document"):
             return MorphoAnalysisAnnotator.annotate_document(annotable, ensemble, config_paths)
-        elif (type(annotable) == type(Sentence)):
+        elif (annotable.__class__.__name__ == "Sentence"):
             return MorphoAnalysisAnnotator.annotate_sentence(annotable, ensemble, config_paths)
-        elif (type(annotable) == type(Token)):
+        elif (annotable.__class__.__name__ == "Token"):
             return MorphoAnalysisAnnotator.annotate_token(annotable, ensemble, config_paths)
 
     @staticmethod
@@ -34,17 +34,19 @@ class MorphoAnalysisAnnotator(Annotator):
         for sentence in document.sentences:
             for token in sentence.tokens:
                 if (len(token.surface) >= 3):
-                    words.add(token.surface)
+                    words.add(token.surface.lower())
 
         morpho_dict = get_morpho_dict(list(words), config_paths, ensemble)
 
         for sentence in document.sentences:
             MorphoAnalysisAnnotator.annotate_sentence(sentence, ensemble, config_paths, morpho_dict)
 
+        return document
+
     @staticmethod
     def annotate_sentence(sentence, ensemble, config_paths, morpho_dict=None):
         if (morpho_dict is None):
-            morpho_dict = get_morpho_dict([token.surface for token in sentence.tokens if (len(token) >= 3)],
+            morpho_dict = get_morpho_dict([token.surface.lower() for token in sentence.tokens if (len(token) >= 3)],
                                           config_paths, ensemble)
 
         for token in sentence.tokens:
@@ -60,11 +62,12 @@ class MorphoAnalysisAnnotator(Annotator):
             token.annotations[annot_const.MORPHO] = nondecomposable_annot
         else:
             if (morpho_dict is None):
-                morpho_dict = get_morpho_dict([token.surface], config_paths, ensemble)
+                morpho_dict = get_morpho_dict([token.surface.lower()], config_paths, ensemble)
 
             if (token.surface in morpho_dict):
                 token.annotations[annot_const.MORPHO] = morpho_dict[token.surface]
-                del token.annotations[annot_const.MORPHO]["word"]
+                if ("word" in token.annotations[annot_const.MORPHO]):
+                    del token.annotations[annot_const.MORPHO]["word"]
             else:
                 token.annotations[annot_const.MORPHO] = nondecomposable_annot
 

@@ -4,7 +4,7 @@ from keras.models import Sequential, Model, load_model
 from keras.layers import Masking, TimeDistributed, Activation, LSTM, RepeatVector, Dense, Bidirectional, Dropout
 from keras import backend as K
 
-from ml import encoder as enc
+import encoder as enc
 
 
 class Word2Morpho(object):

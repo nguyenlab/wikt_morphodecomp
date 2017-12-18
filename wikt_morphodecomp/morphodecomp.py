@@ -9,12 +9,12 @@ from itertools import izip
 from collections import Counter
 from joblib import Parallel, delayed
 
-from data_access.load_morphodb import morphodb_load
-from data_access.load_morphochallenge import load_morphochallenge_data
-from ml.encoder import encode_morphodb, encode_word, ENC_SIZE_CHAR
-from ml.decoder import decode_word, confidence
-from ml.word2morpho import Word2Morpho
-from config.loader import load_config
+from wikt_morphodecomp.data_access.load_morphodb import morphodb_load
+from wikt_morphodecomp.data_access.load_morphochallenge import load_morphochallenge_data
+from wikt_morphodecomp.ml.encoder import encode_morphodb, encode_word, ENC_SIZE_CHAR
+from wikt_morphodecomp.ml.decoder import decode_word, confidence
+from wikt_morphodecomp.ml.word2morpho import Word2Morpho
+from wikt_morphodecomp.config.loader import load_config
 
 
 model_cache = None
@@ -170,8 +170,10 @@ def load_models(config_paths=[]):
 
         config = load_config(config_path)
         model = Word2Morpho(config)
-        model.load(config["data"]["model_path"] % (config["id"], model_num))
-        models.append(model)
+        if (model.load(config["data"]["model_path"] % (config["id"], model_num))):
+            models.append(model)
+        else:
+            print "Problem loading model: ", config["data"]["model_path"] % (config["id"], model_num)
 
         last_config_path = config_path
 
