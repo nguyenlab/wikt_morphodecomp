@@ -15,6 +15,6 @@ setup(
         'numpy',
         'keras',
         'gensim',
-        'web'
+        'web.py'
     ]
 )
