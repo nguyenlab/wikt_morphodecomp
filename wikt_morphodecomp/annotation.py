@@ -6,10 +6,22 @@ from saf.annotators import Annotator
 from morphodecomp import decompose, decompose_ensemble, load_models, EnsembleMode
 from config import DEFAULT_CONFIG_PATH
 
+cache_config_paths = None
+cache_models = None
+
 
 def get_morpho_dict(word_list, config_paths, ensemble):
+    global cache_config_paths
+    global cache_models
+
     if (ensemble):
-        models = load_models(config_paths)
+        if (config_paths == cache_config_paths):
+            models = cache_models
+        else:
+            models = load_models(config_paths)
+            cache_config_paths = config_paths
+            cache_models = models
+
         morpho_analyses = decompose_ensemble(word_list, config_paths, models=models, mode=EnsembleMode.MAJORITY_OVERALL)
     else:
         morpho_analyses = decompose(word_list, config_paths[0])
